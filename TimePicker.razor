@@ -1,0 +1,192 @@
+﻿@using System.Text.RegularExpressions
+@using Microsoft.JSInterop
+@inject Microsoft.JSInterop.IJSRuntime JSRuntime;
+
+<div id="@Id" class="btn-group w-100" @onfocusin="()=> { SetTimePickerVisible(true); }">
+    <div class="input-group input-group-sm">
+        <input type="text" class="form-control fix-rounded-right" @bind-value="Value" />
+        <div class="input-group-prepend" @onclick="()=> { SetTimePickerVisible(!TimePickerVisible); }">
+            <span class="input-group-text">
+                <i class="fas fa-clock"></i>
+            </span>
+        </div>
+    </div>
+    <div class="dropdown-menu w-100 @(TimePickerVisible ? "show" : "")">
+        <div class="time-picker">
+            <div class="tp-col tp-hr" @onwheel="(e) => OnMouseWheel(e,true)" @onkeydown="(e) => OnKeyUp(e,true)">
+                <i class="fas fa-chevron-up tp-up-arrow" @onclick="@(() => { Hour++; })" @onclick:preventDefault></i>
+                <span class="noselect" tabindex="0*">@hour.ToString().PadLeft(2, '0')</span>
+                <i class="fas fa-chevron-down tp-down-arrow" @onclick="@(() => { Hour--; })"></i>
+            </div>
+            <div class="tp-col">
+                <span>:</span>
+            </div>
+            <div class="tp-col tp-min" @onwheel="(e) => OnMouseWheel(e,false)" @onkeydown="(e) => OnKeyUp(e,false)">
+                <i class="fas fa-chevron-up tp-up-arrow" @onmousedown="@(() => { Minute += 1; })"></i>
+                <span tabindex="0">@minute.ToString().PadLeft(2, '0')</span>
+                <i class="fas fa-chevron-down tp-down-arrow" @onclick="@(() => { Minute -= 1; })"></i>
+            </div>
+        </div>
+    </div>
+</div>
+@code {
+    #region Binding Parameters
+    [Parameter]
+    public bool TimePickerVisible { get; set; }
+    [Parameter]
+    public EventCallback<bool> TimePickerVisibleChanged { get; set; }
+
+    private string timeStr;
+    [Parameter]
+    public string Value
+    {
+        get => timeStr;
+        set
+        {
+            if (timeStr == value) return;
+            var valWithoutSpaces = value.Replace(" ", "");
+            var regex = "^([01][0-9]|2[0-3]):([0-5][0-9])$";
+            if (Regex.IsMatch(valWithoutSpaces, regex))
+            {
+                var parts = valWithoutSpaces.Split(':');
+                Hour = Convert.ToInt32(parts[0]);
+                Minute = Convert.ToInt32(parts[1]);
+            }
+            else
+            {
+                return;
+            }
+
+            timeStr = valWithoutSpaces;
+            ValueChanged.InvokeAsync(timeStr);
+        }
+    }
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    private int hour;
+    [Parameter]
+    public int Hour
+    {
+        get => hour;
+        set
+        {
+            if (hour == value) return;
+            hour = value < 0 ? 23 : value % 24;
+            UpdateTimeStr();
+            HourChanged.InvokeAsync(hour);
+        }
+    }
+    [Parameter]
+    public EventCallback<int> HourChanged { get; set; }
+
+
+    private int minute;
+    [Parameter]
+    public int Minute
+    {
+        get => minute;
+        set
+        {
+            if (minute == value) return;
+            minute = value < 0 ? 59 : value % 60;
+            UpdateTimeStr();
+            MinuteChanged.InvokeAsync(minute);
+        }
+    }
+    [Parameter]
+    public EventCallback<int> MinuteChanged { get; set; }
+
+    private TimeSpan timeSpan;
+    [Parameter]
+    public TimeSpan Time
+    {
+        get => timeSpan;
+        set
+        {
+            if (timeSpan == value) return;
+            Minute = timeSpan.Minutes;
+            Hour = timeSpan.Minutes;
+            TimeChanged.InvokeAsync(timeSpan);
+        }
+    }
+    [Parameter]
+    public EventCallback<TimeSpan> TimeChanged { get; set; }
+    #endregion
+
+    private string Id { get; set; } = Guid.NewGuid().ToString();
+
+    protected override Task OnInitializedAsync()
+    {
+        JSRuntime.InvokeAsync<object>("outsideClickHandler.addEvent", Id, DotNetObjectReference.Create(this));
+        return base.OnInitializedAsync();
+    }
+
+    private void UpdateTimeStr()
+    {
+        timeStr = $"{hour.ToString().PadLeft(2, '0')}:{minute.ToString().PadLeft(2, '0')}";
+        timeSpan = new TimeSpan(hour, minute, 0);
+        TimeChanged.InvokeAsync(timeSpan);
+        ValueChanged.InvokeAsync(timeStr);
+    }
+
+    private void SetTimePickerVisible(bool isVisibile)
+    {
+        TimePickerVisible = isVisibile;
+        TimePickerVisibleChanged.InvokeAsync(isVisibile);
+    }
+
+    private void OnMouseWheel(WheelEventArgs e, bool isHour)
+    {
+        int incr = 0;
+        if (e.DeltaY < 0)
+        {
+            incr = 1;
+        }
+        else if (e.DeltaY > 0)
+        {
+            incr = -1;
+        }
+
+        if (isHour)
+        {
+            Hour += incr;
+        }
+        else
+        {
+            Minute += incr;
+        }
+    }
+
+    private void OnKeyUp(KeyboardEventArgs e, bool isHour)
+    {
+        int incr = 0;
+        Console.WriteLine(e.Key);
+        if (e.Key == "ArrowUp")
+        {
+            incr = 1;
+        }
+        else if (e.Key == "ArrowDown")
+        {
+            incr = -1;
+        }
+
+        if (isHour)
+        {
+            Hour += incr;
+        }
+        else
+        {
+            Minute += incr;
+        }
+    }
+
+
+
+    [JSInvokable]
+    public void InvokeClickOutside()
+    {
+        SetTimePickerVisible(false);
+        StateHasChanged();
+    }
+}

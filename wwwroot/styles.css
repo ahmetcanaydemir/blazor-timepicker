@@ -1,0 +1,43 @@
+﻿.noselect {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Old versions of Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
+    user-select: none; /* Non-prefixed version, currently
+								  supported by Chrome, Opera and Firefox */
+}
+
+.time-picker {
+    display: flex;
+    align-items: center;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 150px;
+    justify-content: space-evenly;
+    padding: 7px 25px 7px 25px;
+    font-size: 16pt;
+}
+
+.tp-col {
+    display: flex;
+    flex-direction: column;
+    align-items: inherit;
+    margin: 0 5px 0 5px;
+}
+
+.tp-hr > span, .tp-min > span {
+    border: 1px solid #ccc;
+    padding: 4px 4px;
+    border-radius: 4px;
+    width: 35px;
+    text-align: center;
+    font-size: 15pt;
+}
+
+.tp-up-arrow, .tp-down-arrow {
+    cursor: pointer;
+    height: 18px;
+}
+
+.tp-hr, .tp-min {
+}
