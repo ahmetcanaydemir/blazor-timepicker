@@ -2,9 +2,9 @@
 @using Microsoft.JSInterop
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime;
 
-<div id="@Id" class="btn-group w-100" @onfocusin="()=> { SetTimePickerVisible(true); }">
+<div id="@Id" class="btn-group w-100" >
     <div class="input-group input-group-sm">
-        <input type="text" class="form-control fix-rounded-right" @bind-value="Value" />
+        <input type="text" class="form-control fix-rounded-right" @bind-value="Value" @onfocusin="()=> { SetTimePickerVisible(true); }"/>
         <button class="btn btn-sm btn-secondary" @onclick="()=> { SetTimePickerVisible(!TimePickerVisible); }">
                 <i class="fas fa-clock"></i>
         </button>
