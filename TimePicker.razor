@@ -2,16 +2,14 @@
 @using Microsoft.JSInterop
 @inject Microsoft.JSInterop.IJSRuntime JSRuntime;
 
-<div id="@Id" class="btn-group w-100" @onfocusin="()=> { SetTimePickerVisible(true); }">
+<div id="@Id" class="btn-group w-100" >
     <div class="input-group input-group-sm">
-        <input type="text" class="form-control fix-rounded-right" @bind-value="Value" />
-        <div class="input-group-prepend" @onclick="()=> { SetTimePickerVisible(!TimePickerVisible); }">
-            <span class="input-group-text">
+        <input type="text" class="form-control fix-rounded-right" @bind-value="Value" @onfocusin="()=> { SetTimePickerVisible(true); }"/>
+        <button class="btn btn-sm btn-secondary" @onclick="()=> { SetTimePickerVisible(!TimePickerVisible); }">
                 <i class="fas fa-clock"></i>
-            </span>
-        </div>
+        </button>
     </div>
-    <div class="dropdown-menu w-100 @(TimePickerVisible ? "show" : "")">
+    <div class="dropdown-menu w-100 @(TimePickerVisible ? "show" : "")" style="margin-top:30px">
         <div class="time-picker">
             <div class="tp-col tp-hr" @onwheel="(e) => OnMouseWheel(e,true)" @onkeydown="(e) => OnKeyUp(e,true)">
                 <i class="fas fa-chevron-up tp-up-arrow" @onclick="@(() => { Hour++; })" @onclick:preventDefault></i>
@@ -22,9 +20,9 @@
                 <span>:</span>
             </div>
             <div class="tp-col tp-min" @onwheel="(e) => OnMouseWheel(e,false)" @onkeydown="(e) => OnKeyUp(e,false)">
-                <i class="fas fa-chevron-up tp-up-arrow" @onmousedown="@(() => { Minute += 1; })"></i>
+                <i class="fas fa-chevron-up tp-up-arrow" @onmousedown="@(() => { Minute += Step; })"></i>
                 <span tabindex="0">@minute.ToString().PadLeft(2, '0')</span>
-                <i class="fas fa-chevron-down tp-down-arrow" @onclick="@(() => { Minute -= 1; })"></i>
+                <i class="fas fa-chevron-down tp-down-arrow" @onclick="@(() => { Minute -= Step; })"></i>
             </div>
         </div>
     </div>
@@ -89,7 +87,7 @@
         set
         {
             if (minute == value) return;
-            minute = value < 0 ? 59 : value % 60;
+            minute = value < 0 ? (60 - Step) : value % 60;
             UpdateTimeStr();
             MinuteChanged.InvokeAsync(minute);
         }
@@ -105,14 +103,25 @@
         set
         {
             if (timeSpan == value) return;
-            Minute = timeSpan.Minutes;
-            Hour = timeSpan.Minutes;
-            TimeChanged.InvokeAsync(timeSpan);
+            Minute = value.Minutes;
+            Hour = value.Hours;
+            UpdateTimeStr();
         }
     }
     [Parameter]
     public EventCallback<TimeSpan> TimeChanged { get; set; }
+
+    [Parameter] public int Step { get; set; } = 1;
     #endregion
+
+    public void Clear()
+    {
+        timeSpan = new TimeSpan();
+        minute = 0;
+        hour = 0;
+        timeStr = "";
+        TimeChanged.InvokeAsync(timeSpan);
+    }
 
     private string Id { get; set; } = Guid.NewGuid().ToString();
 
@@ -141,11 +150,11 @@
         int incr = 0;
         if (e.DeltaY < 0)
         {
-            incr = 1;
+            incr = Step;
         }
         else if (e.DeltaY > 0)
         {
-            incr = -1;
+            incr = -Step;
         }
 
         if (isHour)
@@ -164,11 +173,11 @@
         Console.WriteLine(e.Key);
         if (e.Key == "ArrowUp")
         {
-            incr = 1;
+            incr = Step;
         }
         else if (e.Key == "ArrowDown")
         {
-            incr = -1;
+            incr = -Step;
         }
 
         if (isHour)
